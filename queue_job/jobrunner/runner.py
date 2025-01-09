@@ -164,6 +164,11 @@ _logger = logging.getLogger(__name__)
 
 select = selectors.DefaultSelector
 
+EXCLUDE_CHANNEL = os.environ.get('EXCLUDE_CHANNELS', None)
+EXCLUDE_CHANNEL = EXCLUDE_CHANNEL.split(',') if EXCLUDE_CHANNEL else []
+INCLUDE_CHANNEL = os.environ.get('INCLUDE_CHANNELS', None)
+INCLUDE_CHANNEL = INCLUDE_CHANNEL.split(',') if INCLUDE_CHANNEL else []
+
 
 # Unfortunately, it is not possible to extend the Odoo
 # server command line arguments, so we resort to environment variables
@@ -319,6 +324,12 @@ class Database(object):
         # the checker thinks we are injecting values but we are not, we are
         # adding the where conditions, values are added later properly with
         # parameters
+        if INCLUDE_CHANNEL:
+            where += " AND channel in %s"
+            args += (tuple(INCLUDE_CHANNEL),)
+        if not INCLUDE_CHANNEL and EXCLUDE_CHANNEL:
+            where += " AND channel not in %s"
+            args += (tuple(EXCLUDE_CHANNEL),)
         query = (
             "SELECT channel, uuid, id as seq, date_created, "
             "priority, EXTRACT(EPOCH FROM eta), state "
